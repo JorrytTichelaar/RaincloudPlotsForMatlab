@@ -1,28 +1,15 @@
-% TODO
- 
-close all
-fakeData1=[10+randn(100,1), 13+randn(100,1)];
-fakeData2=[11+randn(100,1), 17+randn(100,1)];
-fakeData3=[8+randn(100,1), 18+randn(100,1)];
-ChangeSet.data.cloud.type = "rash";
-ChangeSet.DataSet1.fig.legend = "DataSet1";
-ChangeSet.DataSet2.fig.legend = "DataSet2";
-ChangeSet.DataSet3.fig.legend = "DataSet3";
-plotRaincloud_rm1(fakeData1, fakeData2, fakeData3, ChangeSet)
+function [figHandles, outputData] = plotRaincloud_rm(varargin)
+%plotRaincloud plots a boxplot, scatterplot, distribution and mean of
+%dataset
+%plotRaincloud accepts repeated measures data. Data should be presented as
+%a matrix, with rows corresponding to different measurements and columns to
+%repeated measurements. To change settings, you can adjust the
+%defaultsettings, or give a struct with the settings you want to change.
+%See tutorialRaincloudplots.m for clear instructions. 
 
-% PDoff = [roiTablePE{roiTablePE.group=="PD_off" & roiTablePE.Contrast=="GainPE", "beta"}, roiTablePE{roiTablePE.group=="PD_off" & roiTablePE.Contrast=="LossPE", "beta"}];
-% PDon = [roiTablePE{roiTablePE.group=="PD_on" & roiTablePE.Contrast=="GainPE", "beta"}, roiTablePE{roiTablePE.group=="PD_on" & roiTablePE.Contrast=="LossPE", "beta"}];
-% Control = [roiTablePE{roiTablePE.group=="Control" & roiTablePE.Contrast=="GainPE", "beta"}, roiTablePE{roiTablePE.group=="Control" & roiTablePE.Contrast=="LossPE", "beta"}];
-% setChange.data.fig.group1 = "Reward trials";
-% setChange.data.fig.group2 = "Punishment trials";
-% settings.data1.dots.legend = "PD - off";
-% settings.data2.dots.legend = "PD - on";
-% settings.data3.dots.legend = "Control";
-% close all; figure();
-% plotRaincloud_rm1(PDon, PDoff, Control, setChange)
-
-
-function figHandles = plotRaincloud_rm1(varargin)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Load input and adjust default settings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 hold on
 
 %Check input for settings changes and datasets
@@ -35,7 +22,6 @@ for cVar = 1:size(varargin,2)
         allData.(strcat("DataSet", string(counterDataSet))) = varargin{cVar};
     end
 end
-% nDataSets = size(fieldnames(allData),1);
 
 %Load default settings
 DefaultSettings();
@@ -45,26 +31,32 @@ if exist('settingsChanges', 'var')
     if isfield(settingsChanges, 'data')
         for FieldNameParent = fieldnames(settingsChanges.data)'
             cFieldNameParent = string(FieldNameParent);
-            for FieldNameChild = fieldnames(settingsChanges.data.(cFieldNameParent))'
+            for FieldNameChild = fieldnames(settingsChanges.DataSet.(cFieldNameParent))'
                 cFieldNameChild = string(FieldNameChild);
-                settings.data.(cFieldNameParent).(cFieldNameChild) = settingsChanges.data.(cFieldNameParent).(cFieldNameChild);
+                settings.DataSet.(cFieldNameParent).(cFieldNameChild) = settingsChanges.DataSet.(cFieldNameParent).(cFieldNameChild);
             end
         end
     end
 end
 
-%Update each dataset, one by one.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Adjust dataset specific settings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for cDataSetCounter = 1:size(fieldnames(allData),1)
     cDataSet = strcat("DataSet", string(cDataSetCounter));
-    settings.(cDataSet) = settings.data; %Default settings for all dataset
+    settings.(cDataSet) = settings.DataSet; %Default settings for all dataset
     
     %Automaticly add space between dataSets
-    cTotalWidth = counterDataSet * settings.data.dots.width + ((counterDataSet -1) * settings.data.fig.distanceBetweenDataSets);
-    cStartPosX = settings.data.fig.posX - (0.5 * cTotalWidth) + (0.5 * settings.data.dots.width);
-    cStartPosX2 = settings.data.fig.posX2 - (0.5 * cTotalWidth) + (0.5 * settings.data.dots.width);
-    AddPerDataSet = settings.data.dots.width + settings.data.fig.distanceBetweenDataSets;
-    settings.(strcat("DataSet", string(cDataSetCounter))).fig.posX = cStartPosX + ((cDataSetCounter-1) * AddPerDataSet);
-    settings.(strcat("DataSet", string(cDataSetCounter))).fig.posX2 = cStartPosX2 + ((cDataSetCounter-1) * AddPerDataSet);
+    cTotalWidth = counterDataSet * settings.DataSet.dots.width + ((counterDataSet -1) * settings.DataSet.fig.distanceBetweenDataSets);
+    AddPerDataSet = settings.DataSet.dots.width + settings.DataSet.fig.distanceBetweenDataSets;
+    for cMeasure = 1:size(allData.(cDataSet),2)
+        cStartPosX = settings.DataSet.fig.(strcat("posX", string(cMeasure))) - (0.5 * cTotalWidth) + (0.5 * settings.DataSet.dots.width);
+        cPosX = cStartPosX + ((cDataSetCounter-1) * AddPerDataSet);
+        settings.(strcat("DataSet", string(cDataSetCounter))).fig.(strcat("posX", string(cMeasure))) = cPosX; %Mean
+        settings.(strcat("DataSet", string(cDataSetCounter))).fig.(strcat("ScatterX", string(cMeasure))) = cPosX -0.5 * settings.DataSet.dots.width + settings.DataSet.dots.width * rand(size(allData.(cDataSet),1),1); %Scatter
+        XTickEntries(cMeasure) = settings.DataSet.fig.(strcat("xTick", string(cMeasure)));
+        XTickPos(cMeasure) = settings.DataSet.fig.(strcat("posX", string(cMeasure)));
+    end
     
     %Automaticly change color per dataset:
     if cDataSetCounter == 1; cColor = [255/255 174/255 112/255]; %Nice and orange
@@ -92,89 +84,95 @@ for cDataSetCounter = 1:size(fieldnames(allData),1)
         end
     end
     
-    %Add to legend
+    %Add to legend and xTick 
     LegendEntries(cDataSetCounter) = settings.(strcat("DataSet", string(cDataSetCounter))).fig.legend;
 end
 
-%%%%%%%%%%%%%%%%%%%%%
-% PLOT
-%%%%%%%%%%%%%%%%%%%%
-for cPlot = ["con", "dots", "boxplot", "meanStar", "cloud"] %Plot in this order to avoid lines overlapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Plot
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+for cPlot = ["con", "dots", "boxplot", "meanStar", "cloud"] %Plot in this order to avoid lines overlapping --> This is the reason for some of the inneficient coding
+    %Loop over datasets
     for cDataSetCounter = 1:size(fieldnames(allData),1)
-        %Determine X values
-        xValues.cX1 = settings.(strcat("DataSet", string(cDataSetCounter))).fig.posX;
-        xValues.cX2 = settings.(strcat("DataSet", string(cDataSetCounter))).fig.posX2;
+        %Retrieve data and settings
+        cDataSet = strcat("DataSet", string(cDataSetCounter));
+        cData = allData.(cDataSet);
+        cSettings =  settings.(cDataSet).(cPlot);
         
-        %Plot
-        if settings.(cDataSet).(cPlot).plot
-            %Get right settings
-            cDataSet = strcat("DataSet", string(cDataSetCounter));
-            cData = allData.(cDataSet);
-            cSettings =  settings.(cDataSet).(cPlot);
-            
+        %Number of rm
+        totalMeasures = size(cData,2);
+        
+        %Loop over number of measurement per dataset
+        for cMeasure = 1:totalMeasures
             %Plot
-            switch cPlot
-                case "con"
-                    figHandles.(cDataSet).Con = plotConnectionLines(xValues.cX1, xValues.cX2, cData, cSettings);
-                case "dots"
-                    for cSet = 1:2
-                        cX = xValues.(strcat("cX", string(cSet))); %Get correct X
-                        figHandles.(cDataSet).Dots.(strcat("DataSet", string(cSet))) = plotDots(cX, cData(:,cSet), cSettings);
-                    end
-                case "boxplot"
-                    for cSet = 1:2
-                        cX = xValues.(strcat("cX", string(cSet))); %Get correct X
-                        figHandles.(cDataSet).BoxPlot.(strcat("DataSet", string(cSet))) = plotBoxplot(cX, cData(:,cSet), cSettings);
-                    end
-                case "meanStar"
-                    for cSet = 1:2
-                        cX = xValues.(strcat("cX", string(cSet))); %Get correct X
-                        figHandles.(cDataSet).MeanStar.(strcat("DataSet", string(cSet))) = plotMeanStar(cX, cData(:,cSet), cSettings);
-                    end
-                case "cloud"
-                    for cSet = 1:2
-                        cX = xValues.(strcat("cX", string(cSet))); %Get correct X
-                        
-                        %Flip first dataset
-                        if cSet == 1
-                            flipCloud = true;
-                        else
-                            flipCloud = false;
+            if settings.(cDataSet).(cPlot).plot
+                %Retrieve X value and store data&settings
+                cX = settings.(strcat("DataSet", string(cDataSetCounter))).fig.(strcat("posX", string(cMeasure))); %Get correct X
+                cScat = settings.(strcat("DataSet", string(cDataSetCounter))).fig.(strcat("ScatterX", string(cMeasure))); %Get correct Scatter
+                outputData.(cDataSet).Data.(strcat("Measurement", string(cMeasure))) = cData(:,cMeasure);
+                
+                %Call plotting functions
+                switch cPlot
+                    case "con"
+                        if totalMeasures~=1 && cMeasure~=totalMeasures(end)
+                            cScat2 = settings.(strcat("DataSet", string(cDataSetCounter))).fig.(strcat("ScatterX", string(cMeasure+1))); %Get correct Scatter
+                            figHandles.(cDataSet).Con.(strcat("Measurement", string(cMeasure))) = ...
+                                plotConnectionLines(cScat, cScat2, cData(:,cMeasure), cData(:,cMeasure+1), cSettings);
                         end
-                        
+                    case "dots"
+                        figHandles.(cDataSet).Dots.(strcat("Measurement", string(cMeasure))) = ...
+                            plotDots(cScat, cData(:,cMeasure), cSettings);
+                    case "boxplot"
+                        [figHandles.(cDataSet).BoxPlot.(strcat("Measurement", string(cMeasure))), ...
+                            outputData.(cDataSet).BoxPlot.(strcat("Measurement", string(cMeasure)))] = ...
+                            plotBoxplot(cX, cData(:,cMeasure), cSettings);
+                    case "meanStar"
+                        [figHandles.(cDataSet).MeanStar.(strcat("Measurement", string(cMeasure))), ...
+                            outputData.(cDataSet).Mean.(strcat("Measurement", string(cMeasure)))] = ...
+                            plotMeanStar(cX, cData(:,cMeasure), cSettings);
+                    case "cloud"
                         %Check if rainclouds should be at same X
                         if cSettings.allSameX
-                            cX = settings.data.cloud.(strcat("X", string(cSet))) - settings.data.cloud.offsetToRight;
+                            cX = cSettings.(strcat("X", string(cMeasure))) - cSettings.offsetToRight;
                         end
-                        figHandles.(cDataSet).Cloud.(strcat("DataSet", string(cSet))) = plotCloud(cX, cData(:,cSet), cSettings, flipCloud);
-                    end
+                        [figHandles.(cDataSet).Cloud.(strcat("Measurement", string(cMeasure))), ...
+                            outputData.(cDataSet).Cloud.(strcat("Measurement", string(cMeasure)))] = ...
+                            plotCloud(cX, cData(:,cMeasure), cSettings, cSettings.switch);
+                end
             end
         end
     end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Set figure settings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Set fontSize
+set(findall(0, '-property', 'fontsize'), 'fontsize', settings.DataSet.fig.FontSize)
+
 %Add legend
-if settings.data.fig.plotLegend
-    ScatterPlotsForLegend = flip(findall(gcf,'Type','Scatter'));
-    ScattersToSelect = 1:2:9999;
-    figHandles.legend = legend(ScatterPlotsForLegend(ScattersToSelect(1:counterDataSet)), LegendEntries);
+if settings.DataSet.fig.plotLegend
+    ScatterPlotsForLegend = flip(findall(gcf,'Type','Scatter', 'Marker', 'o'));
+    ScattersToSelect = 1:totalMeasures:9999; %REMOVE THIS HERE AND IN THE NEXT LINE
+    figHandles.legend = legend(ScatterPlotsForLegend(ScattersToSelect(1:counterDataSet)), LegendEntries, 'FontSize', settings.DataSet.fig.LegendFontSize);
+    legend('boxoff')
 end
 
 %Set axis limits
-if settings.data.fig.setLim
-    ylim([settings.data.fig.ylim]);
-    xlim([settings.data.fig.xlim]);
+if settings.DataSet.fig.setLim
+    ylim([settings.DataSet.fig.ylim]);
+    xlim([settings.DataSet.fig.xlim]);
 end
 
-%Add title 
-title(settings.data.fig.title);
+%Add title
+title(settings.DataSet.fig.title, 'FontSize', settings.DataSet.fig.TitelFontSize);
 
 %Add XTicks
-if settings.data.fig.useXTicks
-    xticks([settings.data.fig.posX,  settings.data.fig.posX2]);
-    xticklabels([settings.data.fig.xTick1, settings.data.fig.xTick2]);
+if settings.DataSet.fig.useXTicks
+    xticks(XTickPos);
+    xticklabels(XTickEntries);
 end
 
-%Set fontSize
-set(findall(0, '-property', 'fontsize'), 'fontsize', settings.data.fig.FontSize)
+%Add settings to outputData
+outputData.settings = settings;
 end

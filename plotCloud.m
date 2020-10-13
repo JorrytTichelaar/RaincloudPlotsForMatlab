@@ -1,4 +1,4 @@
-function cHandle = plotCloud(cX, cData, set, flipCloud)
+function [cHandle, outData] = plotCloud(cX, cData, set, flipCloud)
 %plotCloud makes the distribution function
 %   cX = X position of the cloud
 %   cData = data used to calculate cloud distribution
@@ -26,4 +26,8 @@ if flipCloud
 else
     cHandle = fill(cX+set.offsetToRight+(f*set.multi), Xi, set.Color, 'facealpha', set.opacity, 'LineWidth', set.line_width);
 end
+
+%Return data 
+outData.Xi = Xi; 
+outData.f = f; 
 end
