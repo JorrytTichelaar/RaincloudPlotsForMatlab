@@ -1,4 +1,4 @@
-function [figHandles, outputData] = plotRaincloud_rm(varargin)
+function [figHandles, outputData] = plotRaincloud(varargin)
 %plotRaincloud plots a boxplot, scatterplot, distribution and mean of
 %dataset
 %plotRaincloud accepts repeated measures data. Data should be presented as
