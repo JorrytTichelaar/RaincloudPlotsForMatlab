@@ -28,8 +28,8 @@ DefaultSettings();
 
 %Update defaults with data changes from user
 if exist('settingsChanges', 'var')
-    if isfield(settingsChanges, 'data')
-        for FieldNameParent = fieldnames(settingsChanges.data)'
+    if isfield(settingsChanges, 'DataSet')
+        for FieldNameParent = fieldnames(settingsChanges.DataSet)'
             cFieldNameParent = string(FieldNameParent);
             for FieldNameChild = fieldnames(settingsChanges.DataSet.(cFieldNameParent))'
                 cFieldNameChild = string(FieldNameChild);
@@ -54,8 +54,10 @@ for cDataSetCounter = 1:size(fieldnames(allData),1)
         cPosX = cStartPosX + ((cDataSetCounter-1) * AddPerDataSet);
         settings.(strcat("DataSet", string(cDataSetCounter))).fig.(strcat("posX", string(cMeasure))) = cPosX; %Mean
         settings.(strcat("DataSet", string(cDataSetCounter))).fig.(strcat("ScatterX", string(cMeasure))) = cPosX -0.5 * settings.DataSet.dots.width + settings.DataSet.dots.width * rand(size(allData.(cDataSet),1),1); %Scatter
+        
+        %Add XTicks
         XTickEntries(cMeasure) = settings.DataSet.fig.(strcat("xTick", string(cMeasure)));
-        XTickPos(cMeasure) = settings.DataSet.fig.(strcat("posX", string(cMeasure)));
+        XTickPos(cMeasure) = settings.DataSet.fig.(strcat("posX", string(cMeasure))); 
     end
     
     %Automaticly change color per dataset:
@@ -85,7 +87,9 @@ for cDataSetCounter = 1:size(fieldnames(allData),1)
     end
     
     %Add to legend and xTick 
-    LegendEntries(cDataSetCounter) = settings.(strcat("DataSet", string(cDataSetCounter))).fig.legend;
+    LegendEntries(cDataSetCounter) = settings.(strcat("DataSet", string(cDataSetCounter))).legend.entry;
+    MaxEntries(cDataSetCounter) = max(max(allData.(cDataSet)));
+    MinEntries(cDataSetCounter) = min(min(allData.(cDataSet)));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -135,6 +139,11 @@ for cPlot = ["con", "dots", "boxplot", "meanStar", "cloud"] %Plot in this order 
                         if cSettings.allSameX
                             cX = cSettings.(strcat("X", string(cMeasure))) - cSettings.offsetToRight;
                         end
+                        
+                        %Flip first measurement rainclouds
+                        if cMeasure == 1; cSettings.switch = true; else; cSettings.switch = false; end
+                        
+                        %Plot cloud
                         [figHandles.(cDataSet).Cloud.(strcat("Measurement", string(cMeasure))), ...
                             outputData.(cDataSet).Cloud.(strcat("Measurement", string(cMeasure)))] = ...
                             plotCloud(cX, cData(:,cMeasure), cSettings, cSettings.switch);
@@ -148,20 +157,28 @@ end
 % Set figure settings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Set fontSize
-set(findall(0, '-property', 'fontsize'), 'fontsize', settings.DataSet.fig.FontSize)
+set(findall(gca, '-property', 'fontsize'), 'fontsize', settings.DataSet.fig.FontSize)
 
 %Add legend
-if settings.DataSet.fig.plotLegend
-    ScatterPlotsForLegend = flip(findall(gcf,'Type','Scatter', 'Marker', 'o'));
+if settings.DataSet.legend.plot
+    ScatterPlotsForLegend = flip(findall(gca,'Type','Scatter', 'Marker', 'o'));
     ScattersToSelect = 1:totalMeasures:9999; %REMOVE THIS HERE AND IN THE NEXT LINE
-    figHandles.legend = legend(ScatterPlotsForLegend(ScattersToSelect(1:counterDataSet)), LegendEntries, 'FontSize', settings.DataSet.fig.LegendFontSize);
-    legend('boxoff')
+    figHandles.legend = legend(ScatterPlotsForLegend(ScattersToSelect(1:counterDataSet)), LegendEntries, ...
+        'FontSize', settings.DataSet.legend.FontSize, ...
+        'Box', settings.DataSet.legend.Box, ...
+        'NumColumns' , settings.DataSet.legend.NumColumns, ...
+        'Location', settings.DataSet.legend.Location);
 end
 
 %Set axis limits
 if settings.DataSet.fig.setLim
     ylim([settings.DataSet.fig.ylim]);
     xlim([settings.DataSet.fig.xlim]);
+else
+    cMin = min(MinEntries); 
+    cMax = max(MaxEntries); 
+    cDif = cMax - cMin; 
+    ylim([cMin - (0.3*cDif), cMax + (0.2*cDif)])
 end
 
 %Add title

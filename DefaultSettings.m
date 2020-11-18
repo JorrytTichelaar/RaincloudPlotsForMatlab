@@ -22,7 +22,7 @@ settings.DataSet.con.LineColor = [1 1 0];
 settings.DataSet.con.plotInd = true; 
 settings.DataSet.con.line_width = 1;
 settings.DataSet.con.line_opacity = 0.2;
-settings.DataSet.con.plotMean = false; 
+settings.DataSet.con.plotMean = true; 
 settings.DataSet.con.mean_line_width = 3; 
 settings.DataSet.con.mean_line_opacity = 0.8; 
 
@@ -49,32 +49,37 @@ settings.DataSet.meanStar.MarkerEdgeAlpha = 1;
 settings.DataSet.meanStar.line_opacity = 1;
 
 %CLOUD
-settings.DataSet.cloud.plot = false;
+settings.DataSet.cloud.plot = true;
 settings.DataSet.cloud.offsetToRight = 1.1; 
 settings.DataSet.cloud.Color = [1 0 0];
 settings.DataSet.cloud.band_width = 1;
 settings.DataSet.cloud.opacity = 0.5;
 settings.DataSet.cloud.line_width = 0.1;
-settings.DataSet.cloud.type = "rash";
-settings.DataSet.cloud.multi = 3;
+settings.DataSet.cloud.type = "ks";
+settings.DataSet.cloud.multi = 10;
 settings.DataSet.cloud.switch = false; 
 settings.DataSet.cloud.allSameX = true; 
-settings.DataSet.cloud.X1 = 5; 
+settings.DataSet.cloud.X1 = -5; 
 
 %FIGURE
 settings.DataSet.fig.setLim = false; 
 settings.DataSet.fig.ylim = [-10 10];
 settings.DataSet.fig.xlim = [0 10];
 settings.DataSet.fig.title = "Title";
-settings.DataSet.fig.TitelFontSize = 20;
-settings.DataSet.fig.plotLegend = true; 
-settings.DataSet.fig.legend = "DataSet1";
-settings.DataSet.fig.LegendFontSize = 12;
+settings.DataSet.fig.TitelFontSize = 15;
 settings.DataSet.fig.useXTicks = true; 
 settings.DataSet.fig.xTick1 = "XTick1";
-settings.DataSet.fig.FontSize = 15; 
+settings.DataSet.fig.FontSize = 13; 
 settings.DataSet.fig.posX1 = 0; 
 settings.DataSet.fig.distanceBetweenDataSets = 0.5; 
+
+%LEGEND
+settings.DataSet.legend.plot = true; 
+settings.DataSet.legend.entry = "DataSet1";
+settings.DataSet.legend.FontSize = 8;
+settings.DataSet.legend.Box = 'off'; % 'off' or 'on', whether there should be a black line around the box
+settings.DataSet.legend.NumColumns = 6;
+settings.DataSet.legend.Location = 'south'; %Location argument for legend
 
 %Position arguments for rm (you can add more if you have more then 10
 %measurements)
